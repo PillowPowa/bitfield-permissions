@@ -45,34 +45,72 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
       .select(select);
 
     if (!document && !filter?.skipExistChecking) {
-      this.logger.warn('Document not found with filterQuery', where);
-      throw new NotFoundException('Document not found.');
+      throw this.handleEmpty(where);
     }
 
     return document;
   }
 
-  async findOneAndUpdate(
-    filterQuery: FilterQuery<TDocument>,
-    update: UpdateQuery<TDocument>,
-  ) {
-    const document = await this.model.findOneAndUpdate(filterQuery, update, {
-      lean: true,
-      new: true,
-    });
+  async findOneAndUpdate({
+    where,
+    update,
+    select,
+  }: {
+    where: FilterQuery<TDocument>;
+    update: UpdateQuery<TDocument>;
+    select?: (Partial<keyof TDocument> & string)[];
+  }): Promise<TDocument> {
+    const document = await this.model
+      .findOneAndUpdate(where, update, {
+        lean: true,
+        new: true,
+      })
+      .select(select);
 
     if (!document) {
-      this.logger.warn(`Document not found with filterQuery:`, filterQuery);
-      throw new NotFoundException('Document not found.');
+      throw this.handleEmpty(where);
     }
 
     return document;
+  }
+
+  async findById(
+    id: Types.ObjectId,
+    filter?: {
+      select?: (Partial<keyof TDocument> & string)[];
+      skipExistChecking?: boolean;
+    },
+  ): Promise<TDocument> {
+    const document = await this.model.findById(id).select(filter?.select);
+
+    if (!document && !filter?.skipExistChecking) {
+      throw this.handleEmpty(id);
+    }
+
+    return document;
+  }
+
+  async deleteById(id: Types.ObjectId): Promise<TDocument> {
+    return this.model.findByIdAndDelete(id);
+  }
+
+  async updateById(
+    id: Types.ObjectId,
+    {
+      update,
+      select,
+    }: {
+      update: UpdateQuery<TDocument>;
+      select?: (Partial<keyof TDocument> & string)[];
+    },
+  ): Promise<TDocument> {
+    return this.model.findByIdAndUpdate(id, update).select(select);
   }
 
   async upsert(
     filterQuery: FilterQuery<TDocument>,
     document: Partial<TDocument>,
-  ) {
+  ): Promise<TDocument> {
     return this.model.findOneAndUpdate(filterQuery, document, {
       lean: true,
       upsert: true,
@@ -88,5 +126,10 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     const session = await this.connection.startSession();
     session.startTransaction();
     return session;
+  }
+
+  async handleEmpty(filterQuery: FilterQuery<TDocument>) {
+    this.logger.warn(`Document not found with filterQuery:`, filterQuery);
+    return new NotFoundException('Document not found.');
   }
 }

@@ -12,8 +12,7 @@ export class PostsService {
   }
 
   public async getPostById(postId: Types.ObjectId) {
-    const post = await this.postsRepository.findById(postId);
-    return post;
+    return this.postsRepository.findById(postId);
   }
 
   public async update(postId: Types.ObjectId, dto: PostDto) {
