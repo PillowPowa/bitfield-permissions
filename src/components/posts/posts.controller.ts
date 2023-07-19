@@ -14,6 +14,7 @@ import { Permissions } from 'src/utils/persmissions';
 import { PostDto } from './dto/post.dto';
 import { User } from 'src/decorators/user.decorator';
 import { Types } from 'mongoose';
+import { ParseObjectIdPipe } from 'src/decorators/parse-id.pipe';
 
 @Controller('posts')
 export class PostsController {
@@ -32,7 +33,9 @@ export class PostsController {
   @Get('/:id')
   @Auth()
   @PermissionsMeta(Permissions.READ)
-  public async getPostById(@Param('id') postId: Types.ObjectId) {
+  public async getPostById(
+    @Param('id', ParseObjectIdPipe) postId: Types.ObjectId,
+  ) {
     return this.postsService.getPostById(postId);
   }
 
@@ -40,7 +43,7 @@ export class PostsController {
   @Auth()
   @PermissionsMeta(Permissions.UPDATE)
   public async update(
-    @Param('id') postId: Types.ObjectId,
+    @Param('id', ParseObjectIdPipe) postId: Types.ObjectId,
     @Body() dto: PostDto,
   ) {
     return this.postsService.update(postId, dto);
@@ -49,7 +52,7 @@ export class PostsController {
   @Delete('/:id')
   @Auth()
   @PermissionsMeta(Permissions.DELETE)
-  public async delete(@Param('id') postId: Types.ObjectId) {
+  public async delete(@Param('id', ParseObjectIdPipe) postId: Types.ObjectId) {
     return this.postsService.delete(postId);
   }
 }
