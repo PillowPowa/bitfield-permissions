@@ -17,7 +17,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     private readonly connection: Connection,
   ) {}
 
-  async create(
+  public async create(
     document: Omit<TDocument, '_id'>,
     options?: SaveOptions,
   ): Promise<TDocument> {
@@ -30,7 +30,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     ).toJSON() as unknown as TDocument;
   }
 
-  async findOne(
+  public async findOne(
     {
       where,
       select,
@@ -51,7 +51,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document;
   }
 
-  async findOneAndUpdate({
+  public async findOneAndUpdate({
     where,
     update,
     select,
@@ -74,12 +74,12 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document;
   }
 
-  async findById(
+  public async findById(
     id: Types.ObjectId,
-    filter?: {
-      select?: (Partial<keyof TDocument> & string)[];
-      skipExistChecking?: boolean;
-    },
+    filter?: Partial<{
+      select: (Partial<keyof TDocument> & string)[];
+      skipExistChecking: boolean;
+    }>,
   ): Promise<TDocument> {
     const document = await this.model.findById(id).select(filter?.select);
 
@@ -90,11 +90,11 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document;
   }
 
-  async deleteById(id: Types.ObjectId): Promise<TDocument> {
+  public async deleteById(id: Types.ObjectId): Promise<TDocument> {
     return this.model.findByIdAndDelete(id);
   }
 
-  async updateById(
+  public async updateById(
     id: Types.ObjectId,
     {
       update,
@@ -107,7 +107,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return this.model.findByIdAndUpdate(id, update).select(select);
   }
 
-  async upsert(
+  public async upsert(
     filterQuery: FilterQuery<TDocument>,
     document: Partial<TDocument>,
   ): Promise<TDocument> {
@@ -118,17 +118,17 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     });
   }
 
-  async find(filterQuery: FilterQuery<TDocument>) {
+  public async find(filterQuery: FilterQuery<TDocument>) {
     return this.model.find(filterQuery, {}, { lean: true });
   }
 
-  async startTransaction() {
+  public async startTransaction() {
     const session = await this.connection.startSession();
     session.startTransaction();
     return session;
   }
 
-  async handleEmpty(filterQuery: FilterQuery<TDocument>) {
+  private handleEmpty(filterQuery: FilterQuery<TDocument>) {
     this.logger.warn(`Document not found with filterQuery:`, filterQuery);
     return new NotFoundException('Document not found.');
   }
